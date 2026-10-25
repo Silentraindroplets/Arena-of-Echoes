@@ -6,5 +6,4 @@ module com.arena {
     exports com.arena;
     exports com.arena.model;
     exports com.arena.ui;
-    exports com.arena.puzzles;
 }

@@ -9,6 +9,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -17,8 +19,6 @@ import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
 public class TutorialScreen extends StackPane {
@@ -32,7 +32,6 @@ public class TutorialScreen extends StackPane {
 
     private final String[] titles = {
         "WELCOME TO THE ARENA",
-        "CODE CHALLENGES",
         "YOUR TURN (ACTIONS)",
         "THE INTERFACE",
         "TIPS FOR SURVIVAL"
@@ -41,10 +40,6 @@ public class TutorialScreen extends StackPane {
     private final String[] bodies = {
         "The Arena of Echoes is a turn-based RPG where you must fight through five waves of enemies to reach the Ashen King.\n\n" +
         "Combat is turn-based. The character with the highest SPEED (SPD) acts first. You control the heroes; the game controls the enemies.",
-
-        "When an enemy attacks, a CODE CHALLENGE will appear.\n\n" +
-        "Answer the programming puzzle correctly to completely BLOCK the incoming damage. Fail, or run out of time, and you will take full damage.\n\n" +
-        "You can toggle puzzles on/off in the Settings menu, but puzzles are the best way to survive!",
 
         "On your turn, select an action:\n\n" +
         "⚔ FIGHT: Use skills. Some hit one target, some hit all. Watch your MP (Mana).\n" +
@@ -66,7 +61,6 @@ public class TutorialScreen extends StackPane {
     public TutorialScreen(Runnable onComplete) {
         this.onComplete = onComplete;
 
-        // Background
         Rectangle bg = new Rectangle();
         bg.widthProperty().bind(widthProperty());
         bg.heightProperty().bind(heightProperty());
@@ -75,7 +69,6 @@ public class TutorialScreen extends StackPane {
                 new Stop(0.5, Color.web("#1a0e2e")),
                 new Stop(1, Color.web("#0a0508"))));
 
-        // Glow effect
         Rectangle spotlight = new Rectangle(800, 600);
         spotlight.setFill(new RadialGradient(0, 0, 0.5, 0.5, 0.5, true,
                 CycleMethod.NO_CYCLE,
@@ -83,7 +76,6 @@ public class TutorialScreen extends StackPane {
                 new Stop(1, Color.TRANSPARENT)));
         spotlight.setMouseTransparent(true);
 
-        // Content Card
         titleLabel = new Label();
         titleLabel.setStyle("-fx-text-fill: #facc15; -fx-font-size: 26px; " +
                 "-fx-font-weight: bold; -fx-font-family: 'Georgia';");
@@ -108,35 +100,26 @@ public class TutorialScreen extends StackPane {
                 "-fx-border-radius: 12; -fx-background-radius: 12; " +
                 "-fx-effect: dropshadow(gaussian, #000, 30, 0.5, 0, 10);");
 
-        // Navigation Buttons
         Button prevBtn = makeButton("◄ PREVIOUS", "#475569");
         Button nextBtn = makeButton("NEXT ►", "#38bdf8");
         Button skipBtn = makeButton("SKIP TUTORIAL", "#ef4444");
 
         prevBtn.setOnAction(e -> {
-            if (currentPage > 0) {
-                currentPage--;
-                updatePage();
-            }
+            if (currentPage > 0) { currentPage--; updatePage(); }
         });
-
         nextBtn.setOnAction(e -> {
-            if (currentPage < titles.length - 1) {
-                currentPage++;
-                updatePage();
-            } else {
-                finishTutorial();
-            }
+            if (currentPage < titles.length - 1) { currentPage++; updatePage(); }
+            else finishTutorial();
         });
-
         skipBtn.setOnAction(e -> finishTutorial());
 
-        HBox navBar = new HBox(15, skipBtn, new StackPane() {{ getChildren().add(new javafx.scene.layout.Region()); HBox.setHgrow(this, javafx.scene.layout.Priority.ALWAYS); }}, prevBtn, nextBtn);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox navBar = new HBox(15, skipBtn, spacer, prevBtn, nextBtn);
         navBar.setAlignment(Pos.CENTER);
         navBar.setPadding(new Insets(20, 0, 0, 0));
         navBar.setMaxWidth(800);
 
-        // Store references to update later
         this.getProperties().put("prevBtn", prevBtn);
         this.getProperties().put("nextBtn", nextBtn);
 
@@ -144,12 +127,10 @@ public class TutorialScreen extends StackPane {
         mainLayout.setAlignment(Pos.CENTER);
 
         getChildren().addAll(bg, spotlight, mainLayout);
-
         updatePage();
     }
 
     private void updatePage() {
-        // Fade animation for text change
         FadeTransition ft = new FadeTransition(Duration.millis(200), contentBox);
         ft.setFromValue(0.3);
         ft.setToValue(1.0);

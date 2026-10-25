@@ -19,11 +19,8 @@ public class SettingsPanel extends VBox {
         Label title = new Label("SETTINGS");
         title.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 34px; -fx-font-weight: bold; -fx-font-family: 'Georgia';");
 
-        VBox diffRow    = row("Difficulty",  settings, Settings.Difficulty.values(),
+        VBox diffRow = row("Difficulty", settings, Settings.Difficulty.values(),
                 () -> settings.difficulty.ordinal(), v -> settings.difficulty = Settings.Difficulty.values()[v]);
-        VBox puzzleRow  = row("Puzzles",     settings, Settings.PuzzleMode.values(),
-                () -> settings.puzzleMode.ordinal(), v -> settings.puzzleMode = Settings.PuzzleMode.values()[v]);
-        VBox timerRow   = toggleRow("Puzzle Timer", settings.puzzleTimer, v -> settings.puzzleTimer = v);
 
         Button back = new Button("Back");
         back.setPrefSize(220, 48);
@@ -32,7 +29,7 @@ public class SettingsPanel extends VBox {
         back.setOnMouseExited(e  -> back.setStyle(btnStyle("#7c5cff", false)));
         back.setOnAction(e -> onBack.run());
 
-        getChildren().addAll(title, diffRow, puzzleRow, timerRow, back);
+        getChildren().addAll(title, diffRow, back);
     }
 
     private <E extends Enum<E>> VBox row(String label, Settings s, E[] values,
@@ -64,31 +61,6 @@ public class SettingsPanel extends VBox {
             btns[j].setStyle(btnStyle("#7c5cff", j == getter.getAsInt()));
         }
         HBox full = new HBox(14, lbl, buttons);
-        full.setAlignment(Pos.CENTER_LEFT);
-        VBox v = new VBox(full);
-        return v;
-    }
-
-    private VBox toggleRow(String label, boolean initial, java.util.function.Consumer<Boolean> onChange) {
-        Label lbl = new Label(label);
-        lbl.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 12px; -fx-font-weight: bold;");
-        lbl.setMinWidth(110);
-
-        Button on  = new Button("On");
-        Button off = new Button("Off");
-        on.setPrefSize(130, 38);
-        off.setPrefSize(130, 38);
-
-        final boolean[] state = { initial };
-        Runnable refresh = () -> {
-            on .setStyle(btnStyle("#7c5cff", state[0]));
-            off.setStyle(btnStyle("#7c5cff", !state[0]));
-        };
-        on .setOnAction(e -> { state[0] = true;  onChange.accept(true);  refresh.run(); });
-        off.setOnAction(e -> { state[0] = false; onChange.accept(false); refresh.run(); });
-        refresh.run();
-
-        HBox full = new HBox(14, lbl, on, off);
         full.setAlignment(Pos.CENTER_LEFT);
         return new VBox(full);
     }

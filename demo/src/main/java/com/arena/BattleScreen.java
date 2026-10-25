@@ -131,12 +131,12 @@ public class BattleScreen extends StackPane {
         void refresh() {
             hpBar.setRatio(hero.hpRatio(), true);
             mpBar.setRatio(hero.mpRatio(), true);
-            hpText.setText(hero.hp + " / " + hero.maxHp);
-            mpText.setText(hero.mp + " / " + hero.maxMp);
+            hpText.setText(" " + hero.hp + "/" + hero.maxHp);
+            mpText.setText(" " + hero.mp + "/" + hero.maxMp);
             boolean ult = hero.hasUlt();
             ultText.setText(ult ? "★ ULT READY" : "ULT " + (int) (hero.ultRatio() * 100) + "%");
-            ultText.setStyle("-fx-text-fill: " + (ult ? "#facc15" : "#64748b") + ";" +
-                    "-fx-font-size: 10px; -fx-font-weight: bold;");
+            ultText.setStyle("-fx-text-fill: " + (ult ? "#facc15" : "#94a3b8") + ";" +
+                    "-fx-font-size: 10px; -fx-font-weight: bold; -fx-font-family: 'Consolas';");
         }
     }
     
@@ -341,11 +341,8 @@ public class BattleScreen extends StackPane {
             arenaPane.getChildren().add(depth);
         }
 
+        // Dynamic Platforms
         heroPlatform = new Ellipse();
-        heroPlatform.centerXProperty().bind(arenaPane.widthProperty().multiply(0.22));
-        heroPlatform.centerYProperty().bind(arenaPane.heightProperty().multiply(0.76));
-        heroPlatform.radiusXProperty().bind(arenaPane.widthProperty().multiply(0.18));
-        heroPlatform.radiusYProperty().bind(arenaPane.heightProperty().multiply(0.07));
         heroPlatform.setFill(new RadialGradient(0, 0, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,
                 new Stop(0, Color.web("#7c5cff", 0.25)),
                 new Stop(0.7, Color.web("#2a1010", 0.8)),
@@ -354,10 +351,6 @@ public class BattleScreen extends StackPane {
         heroPlatform.setStrokeWidth(2);
 
         enemyPlatform = new Ellipse();
-        enemyPlatform.centerXProperty().bind(arenaPane.widthProperty().multiply(0.72));
-        enemyPlatform.centerYProperty().bind(arenaPane.heightProperty().multiply(0.66));
-        enemyPlatform.radiusXProperty().bind(arenaPane.widthProperty().multiply(0.20));
-        enemyPlatform.radiusYProperty().bind(arenaPane.heightProperty().multiply(0.08));
         enemyPlatform.setFill(new RadialGradient(0, 0, 0.5, 0.5, 0.5, true, CycleMethod.NO_CYCLE,
                 new Stop(0, Color.web("#dc2626", 0.25)),
                 new Stop(0.7, Color.web("#2a1010", 0.8)),
@@ -399,21 +392,21 @@ public class BattleScreen extends StackPane {
         enemyInfoPanel = buildEnemyInfoPanel();
         enemyInfoPanel.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 
-        // SWITCHED: Hero Info goes to top left
+        // Hero Info goes to bottom right (above the menu)
         heroInfoContainer = new VBox(6);
-        heroInfoContainer.setAlignment(Pos.TOP_LEFT);
+        heroInfoContainer.setAlignment(Pos.BOTTOM_RIGHT);
         heroInfoContainer.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-        heroInfoContainer.setTranslateX(20);
-        heroInfoContainer.setTranslateY(20);
+        heroInfoContainer.setTranslateX(-20);
+        heroInfoContainer.setTranslateY(-20);
 
-        // SWITCHED: Enemy Info goes to bottom right
-        enemyInfoPanel.setTranslateX(-20);
-        enemyInfoPanel.setTranslateY(-20);
+        // Enemy Info goes to top left
+        enemyInfoPanel.setTranslateX(20);
+        enemyInfoPanel.setTranslateY(20);
 
         StackPane wrapper = new StackPane(arenaPane, turnOrderBar, enemyInfoPanel, heroInfoContainer);
         StackPane.setAlignment(turnOrderBar,      Pos.TOP_CENTER);
-        StackPane.setAlignment(heroInfoContainer, Pos.TOP_LEFT);    // SWITCHED
-        StackPane.setAlignment(enemyInfoPanel,    Pos.BOTTOM_RIGHT); // SWITCHED
+        StackPane.setAlignment(heroInfoContainer, Pos.BOTTOM_RIGHT);
+        StackPane.setAlignment(enemyInfoPanel,    Pos.TOP_LEFT);
 
         arenaPane.widthProperty().addListener((o, ov, nv) -> layoutBattlers());
         arenaPane.heightProperty().addListener((o, ov, nv) -> layoutBattlers());
@@ -429,26 +422,57 @@ public class BattleScreen extends StackPane {
 
         int nh = heroBattlers.size();
         if (nh > 0) {
+            // Positioned in the bottom left facing right
             double[][] hr = nh == 1
-                    ? new double[][] { { 0.22, 0.60 } }
-                    : new double[][] { { 0.14, 0.63 }, { 0.30, 0.60 } };
+                    ? new double[][] { { 0.25, 0.55 } }
+                    : new double[][] { { 0.15, 0.58 }, { 0.35, 0.52 } };
             for (int i = 0; i < nh; i++) {
                 heroBattlers.get(i).setLayoutX(w * hr[i][0]);
                 heroBattlers.get(i).setLayoutY(h * hr[i][1]);
             }
+            updatePlatform(heroPlatform, heroBattlers, true);
         }
 
         int ne = enemyBattlers.size();
         if (ne > 0) {
+            // Positioned in the top right facing left
             double[][] er;
-            if (ne == 1)      er = new double[][] { { 0.72, 0.50 } };
-            else if (ne == 2) er = new double[][] { { 0.62, 0.55 }, { 0.82, 0.48 } };
-            else              er = new double[][] { { 0.56, 0.58 }, { 0.72, 0.50 }, { 0.88, 0.55 } };
+            if (ne == 1)      er = new double[][] { { 0.75, 0.30 } };
+            else if (ne == 2) er = new double[][] { { 0.65, 0.35 }, { 0.85, 0.25 } };
+            else              er = new double[][] { { 0.60, 0.38 }, { 0.75, 0.28 }, { 0.90, 0.32 } };
             for (int i = 0; i < ne; i++) {
                 enemyBattlers.get(i).setLayoutX(w * er[i][0]);
                 enemyBattlers.get(i).setLayoutY(h * er[i][1]);
             }
+            updatePlatform(enemyPlatform, enemyBattlers, false);
         }
+    }
+
+    private void updatePlatform(Ellipse platform, List<Battler> battlers, boolean isHero) {
+        if (battlers.isEmpty()) return;
+        
+        double minX = Double.MAX_VALUE;
+        double maxX = -Double.MAX_VALUE;
+        double maxY = -Double.MAX_VALUE;
+        
+        for (Battler b : battlers) {
+            double cx = b.getLayoutX() + b.getPrefWidth() / 2;
+            minX = Math.min(minX, cx);
+            maxX = Math.max(maxX, cx);
+            
+            // Adjust Y based on VBox layout structure
+            double footY = isHero ? b.getLayoutY() + 105 : b.getLayoutY() + 165;
+            maxY = Math.max(maxY, footY);
+        }
+
+        double centerX = (minX + maxX) / 2;
+        double radiusX = Math.max(150, (maxX - minX) / 2 + 100); 
+        double centerY = maxY; 
+        
+        platform.setCenterX(centerX);
+        platform.setCenterY(centerY);
+        platform.setRadiusX(radiusX);
+        platform.setRadiusY(radiusX * 0.25); 
     }
 
     private double bx(Battler b) { return b.getBoundsInParent().getCenterX(); }
@@ -466,7 +490,7 @@ public class BattleScreen extends StackPane {
 
         // ── LEFT SIDE: Dialog & Log Box ──
         promptLabel = new Label("What will you do?");
-        promptLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 18px; " +
+        promptLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 20px; " +
                 "-fx-font-family: 'Consolas', 'Courier New', monospace; -fx-font-weight: bold;");
 
         logBox = new VBox(2);
@@ -883,7 +907,7 @@ public class BattleScreen extends StackPane {
     private void showWaitingBar() {
         currentMenuOptions.clear();
         promptLabel.setText("The enemy makes its move…");
-        promptLabel.setStyle("-fx-text-fill: #f87171; -fx-font-size: 18px; " +
+        promptLabel.setStyle("-fx-text-fill: #f87171; -fx-font-size: 20px; " +
                 "-fx-font-family: 'Consolas', monospace; -fx-font-weight: bold;");
         actionGrid.getChildren().clear();
         Label l = new Label("· · ·");
@@ -1970,38 +1994,45 @@ public class BattleScreen extends StackPane {
 
     private VBox buildEnemyInfoPanel() {
         enemyInfoName = new Label("—");
-        enemyInfoName.setStyle("-fx-text-fill: #0a0a0a; -fx-font-size: 14px; " +
-                "-fx-font-weight: bold; -fx-font-family: 'Georgia';");
+        enemyInfoName.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 18px; " +
+                "-fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;");
+
+        Label lvTag = new Label("Lv1");
+        lvTag.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Consolas';");
+
+        Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
+
+        HBox titleRow = new HBox(10, enemyInfoName, sp, lvTag);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
 
         Label hpTag = new Label("HP");
-        hpTag.setStyle("-fx-text-fill: #166534; -fx-font-size: 11px; -fx-font-weight: bold;");
+        hpTag.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Consolas';");
 
-        enemyHpBg = new Rectangle(170, 10);
-        enemyHpBg.setFill(Color.web("#cbd5e1"));
-        enemyHpBg.setArcWidth(6); enemyHpBg.setArcHeight(6);
+        enemyHpBg = new Rectangle(160, 8);
+        enemyHpBg.setFill(Color.web("#222222"));
+        enemyHpBg.setArcWidth(4); enemyHpBg.setArcHeight(4);
 
-        enemyHpFill = new Rectangle(170, 10);
+        enemyHpFill = new Rectangle(160, 8);
         enemyHpFill.setFill(Color.web("#4ade80"));
-        enemyHpFill.setArcWidth(6); enemyHpFill.setArcHeight(6);
+        enemyHpFill.setArcWidth(4); enemyHpFill.setArcHeight(4);
 
         StackPane hpStack = new StackPane(enemyHpBg, enemyHpFill);
         hpStack.setAlignment(Pos.CENTER_LEFT);
-        hpStack.setPrefWidth(170);
-        hpStack.setMaxWidth(170);
+        hpStack.setPrefWidth(160);
+        hpStack.setMaxWidth(160);
 
         enemyInfoHpText = new Label("—");
-        enemyInfoHpText.setStyle("-fx-text-fill: #1a1a1a; -fx-font-size: 10px; " +
-                "-fx-font-family: 'Consolas';");
+        enemyInfoHpText.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 16px; -fx-font-family: 'Consolas';");
 
-        HBox hpRow = new HBox(6, hpTag, hpStack, enemyInfoHpText);
+        HBox hpRow = new HBox(8, hpTag, hpStack, enemyInfoHpText);
         hpRow.setAlignment(Pos.CENTER_LEFT);
 
-        VBox panel = new VBox(4, enemyInfoName, hpRow);
-        panel.setPadding(new Insets(8, 14, 8, 14));
-        panel.setStyle("-fx-background-color: rgba(232,232,232,0.95); " +
-                "-fx-border-color: #1a1a1a; -fx-border-width: 2; " +
-                "-fx-border-radius: 8; -fx-background-radius: 8; " +
-                "-fx-effect: dropshadow(gaussian, #000, 12, 0.45, 0, 3);");
+        VBox panel = new VBox(4, titleRow, hpRow);
+        panel.setPadding(new Insets(10, 16, 10, 16));
+        panel.setStyle("-fx-background-color: #000000; " +
+                "-fx-border-color: #ffffff; -fx-border-width: 3; " +
+                "-fx-border-radius: 4; -fx-background-radius: 4; " +
+                "-fx-effect: dropshadow(gaussian, #000, 10, 0.5, 0, 3);");
         panel.setVisible(false);
         return panel;
     }
@@ -2012,7 +2043,13 @@ public class BattleScreen extends StackPane {
         if (target == null) { enemyInfoPanel.setVisible(false); return; }
         enemyInfoPanel.setVisible(true);
         enemyInfoName.setText(target.name);
-        enemyInfoHpText.setText(target.hp + " / " + target.maxHp);
+        
+        // Update Level
+        HBox titleRow = (HBox) enemyInfoPanel.getChildren().get(0);
+        Label lvTag = (Label) titleRow.getChildren().get(2);
+        lvTag.setText("Lv" + target.level);
+
+        enemyInfoHpText.setText(" " + target.hp + "/ " + target.maxHp);
         double ratio = Math.max(0, target.hpRatio());
         enemyHpFill.setWidth(enemyHpBg.getWidth() * ratio);
         enemyHpFill.setFill(ratio > 0.5 ? Color.web("#4ade80")
@@ -2034,39 +2071,51 @@ public class BattleScreen extends StackPane {
         HeroInfoStrip s = new HeroInfoStrip();
         s.hero = h;
 
-        Label pBadge = new Label("P" + playerNumber);
-        pBadge.setStyle("-fx-background-color: " + h.colorHex() + ";" +
-                "-fx-text-fill: #0a0c13; -fx-font-size: 10px; -fx-font-weight: bold;" +
-                "-fx-padding: 2 6; -fx-background-radius: 4;");
+        Label name = new Label(h.name.toUpperCase());
+        name.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 18px; " +
+                "-fx-font-weight: bold; -fx-font-family: 'Consolas', monospace;");
 
-        Label name = new Label(h.name.toUpperCase() + "  Lv." + h.level);
-        name.setStyle("-fx-text-fill: #0a0a0a; -fx-font-size: 12px; -fx-font-weight: bold; " +
-                "-fx-font-family: 'Georgia';");
+        Label lvTag = new Label("Lv" + h.level);
+        lvTag.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Consolas';");
 
         s.ultText = new Label();
         Region sp = new Region(); HBox.setHgrow(sp, Priority.ALWAYS);
 
-        HBox titleRow = new HBox(6, pBadge, name, sp, s.ultText);
+        HBox titleRow = new HBox(10, name, sp, lvTag);
         titleRow.setAlignment(Pos.CENTER_LEFT);
 
-        s.hpText = new Label(); s.hpText.setStyle("-fx-text-fill: #1a1a1a; -fx-font-size: 10px; -fx-font-family: 'Consolas';");
-        s.mpText = new Label(); s.mpText.setStyle("-fx-text-fill: #1a1a1a; -fx-font-size: 10px; -fx-font-family: 'Consolas';");
+        s.hpText = new Label(); s.hpText.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 16px; -fx-font-family: 'Consolas';");
+        
+        Label hpTag = new Label("HP"); hpTag.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Consolas';");
 
-        s.hpBar = new StatBar(140, 8, Color.web("#22c55e"));
-        s.mpBar = new StatBar(140, 6, Color.web("#3b82f6"));
+        Rectangle hpBg = new Rectangle(160, 8);
+        hpBg.setFill(Color.web("#222222"));
+        hpBg.setArcWidth(4); hpBg.setArcHeight(4);
 
-        Label hpTag = new Label("HP"); hpTag.setStyle("-fx-text-fill: #166534; -fx-font-size: 10px; -fx-font-weight: bold;");
-        Label mpTag = new Label("MP"); mpTag.setStyle("-fx-text-fill: #1e40af; -fx-font-size: 10px; -fx-font-weight: bold;");
+        Rectangle hpFill = new Rectangle(160, 8);
+        hpFill.setFill(Color.web("#4ade80"));
+        hpFill.setArcWidth(4); hpFill.setArcHeight(4);
+        StackPane hpStack = new StackPane(hpBg, hpFill);
+        hpStack.setAlignment(Pos.CENTER_LEFT);
+        hpStack.setPrefWidth(160);
+        hpStack.setMaxWidth(160);
 
-        HBox hpRow = new HBox(6, hpTag, s.hpBar, s.hpText); hpRow.setAlignment(Pos.CENTER_LEFT);
-        HBox mpRow = new HBox(6, mpTag, s.mpBar, s.mpText); mpRow.setAlignment(Pos.CENTER_LEFT);
+        s.hpBar = new StatBar(160, 8, Color.web("#4ade80")); // Keep StatBar for animation logic
 
-        s.root = new VBox(3, titleRow, hpRow, mpRow);
-        s.root.setPadding(new Insets(8, 12, 8, 12));
-        s.root.setStyle("-fx-background-color: rgba(232,232,232,0.95); " +
-                "-fx-border-color: #1a1a1a; -fx-border-width: 2; " +
-                "-fx-border-radius: 8; -fx-background-radius: 8; " +
-                "-fx-effect: dropshadow(gaussian, #000, 10, 0.4, 0, 3);");
+        HBox hpRow = new HBox(8, hpTag, s.hpBar, s.hpText); hpRow.setAlignment(Pos.CENTER_LEFT);
+
+        // MP Row (smaller, less prominent like Pokémon)
+        s.mpText = new Label(); s.mpText.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 16px; -fx-font-family: 'Consolas';");
+        Label mpTag = new Label("MP"); mpTag.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 16px; -fx-font-weight: bold; -fx-font-family: 'Consolas';");
+        s.mpBar = new StatBar(160, 6, Color.web("#38bdf8"));
+        HBox mpRow = new HBox(8, mpTag, s.mpBar, s.mpText); mpRow.setAlignment(Pos.CENTER_LEFT);
+
+        s.root = new VBox(2, titleRow, hpRow, mpRow);
+        s.root.setPadding(new Insets(10, 16, 10, 16));
+        s.root.setStyle("-fx-background-color: #000000; " +
+                "-fx-border-color: #ffffff; -fx-border-width: 3; " +
+                "-fx-border-radius: 4; -fx-background-radius: 4; " +
+                "-fx-effect: dropshadow(gaussian, #000, 10, 0.5, 0, 3);");
 
         s.refresh();
         return s;

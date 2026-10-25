@@ -47,10 +47,34 @@ public class Game {
         setContent(new MenuScreen(this));
     }
 
-    public void startBattleWithIntro(int numPlayers) {
+    private void startBattleWithIntroDirect(int numPlayers) {
         storyLayer.setVisible(false);
         storyLayer.getChildren().clear();
         setContent(new IntroScene(this, numPlayers));
+    }
+
+    public void startBattleWithIntro(int numPlayers) {
+        if (!settings.tutorialSeen) {
+            // Show tutorial first, then start the battle
+            showTutorial(() -> {
+                settings.tutorialSeen = true;
+                startBattleWithIntroDirect(numPlayers);
+            });
+        } else {
+            startBattleWithIntroDirect(numPlayers);
+        }
+    }
+
+      public void showTutorial(Runnable onComplete) {
+        storyLayer.setVisible(false);
+        storyLayer.getChildren().clear();
+        setContent(new TutorialScreen(() -> {
+            if (onComplete != null) {
+                onComplete.run();
+            } else {
+                showMenu();
+            }
+        }));
     }
 
     public void startBattleWithCinematic(int numPlayers) {
@@ -83,4 +107,5 @@ public class Game {
     public void unlockCodex(String id) {
         StoryCodex.unlock(id);
     }
+    
 }

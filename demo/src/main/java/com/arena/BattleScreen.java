@@ -104,7 +104,7 @@ public class BattleScreen extends StackPane {
     private Label waveLabel, roundLabel, turnLabel;
     private Button pauseBtn;
 
-    // ── new Pokémon-style UI ──
+    // ── Pokémon-style UI ──
     private VBox enemyInfoPanel;
     private Label enemyInfoName, enemyInfoHpText;
     private Rectangle enemyHpBg, enemyHpFill;
@@ -115,6 +115,10 @@ public class BattleScreen extends StackPane {
     private GridPane actionGrid;
     private Label promptLabel;
     private MenuState menuState = MenuState.ROOT;
+    
+    // Menu Navigation State
+    private final List<MenuItem> currentMenuOptions = new ArrayList<>();
+    private int focusedIndex = 0;
 
     private enum MenuState { ROOT, SKILLS, ITEMS }
 
@@ -133,6 +137,20 @@ public class BattleScreen extends StackPane {
             ultText.setText(ult ? "★ ULT READY" : "ULT " + (int) (hero.ultRatio() * 100) + "%");
             ultText.setStyle("-fx-text-fill: " + (ult ? "#facc15" : "#64748b") + ";" +
                     "-fx-font-size: 10px; -fx-font-weight: bold;");
+        }
+    }
+    
+    private static class MenuItem {
+        String label;
+        String subtext;
+        boolean disabled;
+        Runnable action;
+
+        MenuItem(String label, String subtext, boolean disabled, Runnable action) {
+            this.label = label;
+            this.subtext = subtext;
+            this.disabled = disabled;
+            this.action = action;
         }
     }
 
@@ -227,7 +245,6 @@ public class BattleScreen extends StackPane {
         arenaPane = new Pane();
         arenaPane.setStyle("-fx-background-color: #0a0205;");
 
-        // Sky gradient (Blood moon backdrop)
         Rectangle sky = new Rectangle();
         sky.widthProperty().bind(arenaPane.widthProperty());
         sky.heightProperty().bind(arenaPane.heightProperty().multiply(0.75));
@@ -237,7 +254,6 @@ public class BattleScreen extends StackPane {
                 new Stop(1, Color.web("#5c0606"))));
         arenaPane.getChildren().add(sky);
 
-        // Blood Moon & Glow
         Circle moonGlow = new Circle();
         moonGlow.radiusProperty().bind(arenaPane.widthProperty().multiply(0.18));
         moonGlow.centerXProperty().bind(arenaPane.widthProperty().multiply(0.5));
@@ -259,7 +275,6 @@ public class BattleScreen extends StackPane {
         moon.setEffect(new DropShadow(60, Color.web("#ff2020", 0.95)));
         arenaPane.getChildren().add(moon);
 
-        // Jagged Hell Mountains (Silhouette)
         Polygon mountains = new Polygon();
         mountains.setFill(Color.web("#0f0205"));
         arenaPane.getChildren().add(mountains);
@@ -286,7 +301,6 @@ public class BattleScreen extends StackPane {
         arenaPane.widthProperty().addListener((o, ov, nv) -> buildMountains.run());
         arenaPane.heightProperty().addListener((o, ov, nv) -> buildMountains.run());
 
-        // Ground Arena Floor
         Rectangle ground = new Rectangle();
         ground.widthProperty().bind(arenaPane.widthProperty());
         ground.yProperty().bind(arenaPane.heightProperty().multiply(0.75));
@@ -296,7 +310,6 @@ public class BattleScreen extends StackPane {
                 new Stop(1, Color.web("#0a0205"))));
         arenaPane.getChildren().add(ground);
 
-        // Horizon Line
         Line horizon = new Line();
         horizon.startXProperty().set(0);
         horizon.endXProperty().bind(arenaPane.widthProperty());
@@ -307,7 +320,6 @@ public class BattleScreen extends StackPane {
         horizon.setEffect(new DropShadow(15, Color.web("#ff4010")));
         arenaPane.getChildren().add(horizon);
 
-        // Perspective Grid
         for (int i = -5; i <= 5; i++) {
             Line tile = new Line();
             tile.setStroke(Color.web("#8b3010", 0.25));
@@ -329,7 +341,6 @@ public class BattleScreen extends StackPane {
             arenaPane.getChildren().add(depth);
         }
 
-        // Pokémon-style Platforms
         heroPlatform = new Ellipse();
         heroPlatform.centerXProperty().bind(arenaPane.widthProperty().multiply(0.22));
         heroPlatform.centerYProperty().bind(arenaPane.heightProperty().multiply(0.76));
@@ -356,7 +367,6 @@ public class BattleScreen extends StackPane {
 
         arenaPane.getChildren().addAll(heroPlatform, enemyPlatform);
 
-        // Embers
         for (int i = 0; i < 25; i++) {
             Circle ember = new Circle(1 + rng.nextDouble() * 2);
             ember.setFill(Color.web(rng.nextBoolean() ? "#ff6020" : "#ff2020", 0.85));
@@ -378,7 +388,6 @@ public class BattleScreen extends StackPane {
             flick.play();
         }
 
-        // UI Elements floating over arena
         turnOrderBar = new HBox(6);
         turnOrderBar.setAlignment(Pos.CENTER);
         turnOrderBar.setPadding(new Insets(6, 10, 6, 10));
@@ -389,19 +398,22 @@ public class BattleScreen extends StackPane {
 
         enemyInfoPanel = buildEnemyInfoPanel();
         enemyInfoPanel.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-        enemyInfoPanel.setTranslateX(20);
-        enemyInfoPanel.setTranslateY(20);
 
+        // SWITCHED: Hero Info goes to top left
         heroInfoContainer = new VBox(6);
-        heroInfoContainer.setAlignment(Pos.BOTTOM_RIGHT);
+        heroInfoContainer.setAlignment(Pos.TOP_LEFT);
         heroInfoContainer.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-        heroInfoContainer.setTranslateX(-20);
-        heroInfoContainer.setTranslateY(-20);
+        heroInfoContainer.setTranslateX(20);
+        heroInfoContainer.setTranslateY(20);
+
+        // SWITCHED: Enemy Info goes to bottom right
+        enemyInfoPanel.setTranslateX(-20);
+        enemyInfoPanel.setTranslateY(-20);
 
         StackPane wrapper = new StackPane(arenaPane, turnOrderBar, enemyInfoPanel, heroInfoContainer);
         StackPane.setAlignment(turnOrderBar,      Pos.TOP_CENTER);
-        StackPane.setAlignment(enemyInfoPanel,    Pos.TOP_LEFT);
-        StackPane.setAlignment(heroInfoContainer, Pos.BOTTOM_RIGHT);
+        StackPane.setAlignment(heroInfoContainer, Pos.TOP_LEFT);    // SWITCHED
+        StackPane.setAlignment(enemyInfoPanel,    Pos.BOTTOM_RIGHT); // SWITCHED
 
         arenaPane.widthProperty().addListener((o, ov, nv) -> layoutBattlers());
         arenaPane.heightProperty().addListener((o, ov, nv) -> layoutBattlers());
@@ -443,56 +455,54 @@ public class BattleScreen extends StackPane {
     private double by(Battler b) { return b.getBoundsInParent().getCenterY(); }
 
     // ==================================================================
-    //  BOTTOM UI (Fixed Height + Action Grid)
+    //  BOTTOM UI (Authentic Pokémon Layout)
     // ==================================================================
     private Node buildBottom() {
-        VBox bottom = new VBox(0);
-        bottom.setStyle("-fx-background-color: #0a0d1a;");
-        // HARD FIX: Lock the height so it doesn't stretch
-        bottom.setPrefHeight(170);
-        bottom.setMinHeight(170);
-        bottom.setMaxHeight(170);
+        HBox bottom = new HBox(10);
+        bottom.setStyle("-fx-background-color: #0a0d1a; -fx-padding: 15 20 15 20;");
+        bottom.setPrefHeight(180);
+        bottom.setMinHeight(180);
+        bottom.setMaxHeight(180);
 
-        // ── battle log ──
+        // ── LEFT SIDE: Dialog & Log Box ──
+        promptLabel = new Label("What will you do?");
+        promptLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 18px; " +
+                "-fx-font-family: 'Consolas', 'Courier New', monospace; -fx-font-weight: bold;");
+
         logBox = new VBox(2);
-        logBox.setPadding(new Insets(10, 20, 10, 20));
-        logBox.setStyle("-fx-background-color: #10050a;");
+        logBox.setPadding(new Insets(5, 0, 5, 0));
 
         logScroll = new ScrollPane(logBox);
         logScroll.setFitToWidth(true);
         logScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         logScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        logScroll.setStyle("-fx-background: #10050a; -fx-background-color: #10050a; " +
-                "-fx-border-color: #3d0a10; -fx-border-width: 2 1 0 0;");
+        logScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
+        VBox.setVgrow(logScroll, Priority.ALWAYS);
 
-        // ── action area (prompt + 2×2 grid) ──
-        promptLabel = new Label("What will you do?");
-        promptLabel.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 15px; " +
-                "-fx-font-family: 'Georgia'; -fx-font-style: italic; -fx-font-weight: bold;");
+        VBox leftBox = new VBox(5, promptLabel, logScroll);
+        leftBox.setPadding(new Insets(12, 20, 12, 20));
+        leftBox.setStyle("-fx-background-color: #000000; " +
+                "-fx-border-color: #ffffff; -fx-border-width: 3; " +
+                "-fx-border-radius: 8; -fx-background-radius: 8;");
+        HBox.setHgrow(leftBox, Priority.ALWAYS);
 
+        // ── RIGHT SIDE: Action Menu ──
         actionGrid = new GridPane();
         actionGrid.setHgap(10);
-        actionGrid.setVgap(10);
+        actionGrid.setVgap(8);
+        actionGrid.setPadding(new Insets(15, 20, 15, 20));
         actionGrid.setAlignment(Pos.CENTER);
 
-        VBox actionArea = new VBox(12, promptLabel, actionGrid);
-        actionArea.setAlignment(Pos.CENTER);
-        actionArea.setPadding(new Insets(12, 20, 16, 20));
-        
-        // HARD FIX: Lock the width so the buttons don't stretch weirdly
-        actionArea.setMinWidth(400);
-        actionArea.setPrefWidth(400);
-        actionArea.setMaxWidth(400);
-        actionArea.setStyle("-fx-background-color: #0e1220; " +
-                "-fx-border-color: #3d0a10; -fx-border-width: 2 0 0 2;");
+        VBox rightBox = new VBox(actionGrid);
+        rightBox.setAlignment(Pos.CENTER);
+        rightBox.setPrefWidth(320);
+        rightBox.setMinWidth(320);
+        rightBox.setMaxWidth(320);
+        rightBox.setStyle("-fx-background-color: #ffffff; " +
+                "-fx-border-color: #000000; -fx-border-width: 3; " +
+                "-fx-border-radius: 8; -fx-background-radius: 8;");
 
-        HBox row = new HBox(0);
-        HBox.setHgrow(logScroll, Priority.ALWAYS);
-        row.getChildren().addAll(logScroll, actionArea);
-        row.setStyle("-fx-background-color: #10050a; -fx-border-color: #3d0a10; -fx-border-width: 1 0 0 0;");
-        
-        VBox.setVgrow(row, Priority.ALWAYS);
-        bottom.getChildren().add(row);
+        bottom.getChildren().addAll(leftBox, rightBox);
         return bottom;
     }
 
@@ -518,7 +528,6 @@ public class BattleScreen extends StackPane {
         Platform.runLater(this::buildHeroStrips);
     }
 
-    // ---------------- chapter metadata ----------------
     private String chapterNumber(int waveIndex) {
         return switch (waveIndex) { case 1 -> "I"; case 2 -> "II"; case 3 -> "III"; case 4 -> "IV"; default -> "V"; };
     }
@@ -672,6 +681,7 @@ public class BattleScreen extends StackPane {
         if (current instanceof Hero hero) {
             awaitingInput = true;
             pauseBtn.setDisable(false);
+            menuState = MenuState.ROOT;
             buildActionBar(hero);
             refreshUI();
             Platform.runLater(this::requestFocus);
@@ -733,19 +743,12 @@ public class BattleScreen extends StackPane {
     private void updateTurnBanner(Combatant c) {
         if (c instanceof Hero h) {
             int idx = heroes.indexOf(h) + 1;
-            promptLabel.setText("What will " + h.name + " do?   (Player " + idx + ")");
-            promptLabel.setStyle("-fx-text-fill: " + h.colorHex() + "; -fx-font-size: 15px; " +
-                    "-fx-font-family: 'Georgia'; -fx-font-style: italic; -fx-font-weight: bold;");
             turnLabel.setText("PLAYER " + idx);
             turnLabel.setStyle("-fx-text-fill: " + h.colorHex() + "; -fx-font-size: 12.5px; -fx-font-weight: bold;");
         } else {
-            promptLabel.setText(c.name + " is acting…");
-            promptLabel.setStyle("-fx-text-fill: #f87171; -fx-font-size: 15px; " +
-                    "-fx-font-family: 'Georgia'; -fx-font-style: italic; -fx-font-weight: bold;");
             turnLabel.setText("ENEMY");
             turnLabel.setStyle("-fx-text-fill: #f87171; -fx-font-size: 12.5px; -fx-font-weight: bold;");
         }
-        menuState = MenuState.ROOT;
     }
 
     // ==================================================================
@@ -753,121 +756,111 @@ public class BattleScreen extends StackPane {
     // ==================================================================
 
     private void buildActionBar(Hero hero) {
-        actionGrid.getChildren().clear();
+        currentMenuOptions.clear();
+        focusedIndex = 0;
+        
         switch (menuState) {
-            case ROOT   -> buildRootMenu(hero);
-            case SKILLS -> buildSkillMenu(hero);
-            case ITEMS  -> buildItemMenu(hero);
-        }
-    }
-
-    private void buildRootMenu(Hero hero) {
-        Button fight = pkmnButton("⚔  FIGHT", "#ef4444", "#7f1d1d", false, 160, 55);
-        fight.setOnAction(e -> { menuState = MenuState.SKILLS; buildActionBar(hero); });
-
-        Button defend = pkmnButton("🛡  DEFEND", "#22c55e", "#14532d", false, 160, 55);
-        defend.setOnAction(e -> doHeroDefend(hero));
-
-        Button items = pkmnButton("🎒  ITEMS", "#f59e0b", "#78350f",
-                hero.potions <= 0 && hero.ethers <= 0, 160, 55);
-        items.setOnAction(e -> { menuState = MenuState.ITEMS; buildActionBar(hero); });
-
-        Button ult = pkmnButton("★  ULT", "#38bdf8", "#0369a1",
-                !hero.hasUlt(), 160, 55);
-        ult.setOnAction(e -> doHeroUltimate(hero));
-
-        actionGrid.add(fight,  0, 0);
-        actionGrid.add(defend, 1, 0);
-        actionGrid.add(items,  0, 1);
-        actionGrid.add(ult,    1, 1);
-    }
-
-    private void buildSkillMenu(Hero hero) {
-        int col = 0, row = 0;
-        for (Skill s : hero.skills) {
-            int cd = hero.cooldownOf(s);
-            boolean canUse = hero.mp >= s.mpCost && cd == 0;
-            String label = s.name
-                    + (s.mpCost > 0 ? "\n" + s.mpCost + " MP" : "")
-                    + (cd > 0       ? "  (CD " + cd + ")"   : "");
-            Button b = pkmnButton(label, hero.colorHex(), "#1e1b4b", !canUse, 160, 55);
-            if (canUse) {
-                final Skill sk = s;
-                b.setOnAction(e -> doHeroSkill(hero, sk));
+            case ROOT -> {
+                promptLabel.setText("What will " + hero.name + " do?");
+                currentMenuOptions.add(new MenuItem("FIGHT", "", false, () -> { menuState = MenuState.SKILLS; buildActionBar(hero); }));
+                currentMenuOptions.add(new MenuItem("DEFEND", "", false, () -> doHeroDefend(hero)));
+                currentMenuOptions.add(new MenuItem("ITEMS", "", hero.potions <= 0 && hero.ethers <= 0, () -> { menuState = MenuState.ITEMS; buildActionBar(hero); }));
+                currentMenuOptions.add(new MenuItem("ULT", "", !hero.hasUlt(), () -> doHeroUltimate(hero)));
             }
-            actionGrid.add(b, col, row);
-            col++;
-            if (col > 1) { col = 0; row++; }
+            case SKILLS -> {
+                promptLabel.setText("Choose a skill:");
+                for (Skill s : hero.skills) {
+                    int cd = hero.cooldownOf(s);
+                    boolean canUse = hero.mp >= s.mpCost && cd == 0;
+                    String sub = (s.mpCost > 0 ? s.mpCost + " MP" : "") + (cd > 0 ? " (CD " + cd + ")" : "");
+                    currentMenuOptions.add(new MenuItem(s.name, sub, !canUse, () -> doHeroSkill(hero, s)));
+                }
+            }
+            case ITEMS -> {
+                promptLabel.setText("Choose an item:");
+                currentMenuOptions.add(new MenuItem("POTION x" + hero.potions, "Heal 55 HP", hero.potions <= 0, () -> doHeroPotion(hero)));
+                currentMenuOptions.add(new MenuItem("ETHER x" + hero.ethers, "Restore 40 MP", hero.ethers <= 0, () -> doHeroEther(hero)));
+            }
         }
-        Button back = pkmnButton("◄  BACK", "#475569", "#1e293b", false, 160, 42);
-        back.setOnAction(e -> { menuState = MenuState.ROOT; buildActionBar(hero); });
-        actionGrid.add(back, 0, row + 1, 2, 1);
+        renderMenu();
     }
 
-    private void buildItemMenu(Hero hero) {
-        Button potion = pkmnButton("Potion ×" + hero.potions, "#22c55e", "#14532d",
-                hero.potions <= 0, 160, 55);
-        potion.setOnAction(e -> doHeroPotion(hero));
-
-        Button ether = pkmnButton("Ether ×" + hero.ethers, "#38bdf8", "#0369a1",
-                hero.ethers <= 0, 160, 55);
-        ether.setOnAction(e -> doHeroEther(hero));
-
-        Button back = pkmnButton("◄  BACK", "#475569", "#1e293b", false, 160, 42);
-        back.setOnAction(e -> { menuState = MenuState.ROOT; buildActionBar(hero); });
-
-        actionGrid.add(potion, 0, 0);
-        actionGrid.add(ether,  1, 0);
-        actionGrid.add(back,   0, 1, 2, 1);
-    }
-
-    private Button pkmnButton(String text, String bg, String border,
-                              boolean disabled, double w, double h) {
-        Button b = new Button(text);
-        b.setPrefSize(w, h);
-        b.setWrapText(true);
-        b.setDisable(disabled);
-        b.setStyle(pkmnStyle(bg, border, disabled, false));
-        if (!disabled) {
-            b.setOnMouseEntered(e -> b.setStyle(pkmnStyle(bg, border, false, true)));
-            b.setOnMouseExited(e  -> b.setStyle(pkmnStyle(bg, border, false, false)));
-        }
-        return b;
-    }
-
-    private String pkmnStyle(String bg, String border, boolean disabled, boolean hover) {
-        if (disabled) {
-            return "-fx-background-color: #1f2937;" +
-                   "-fx-border-color: #111827;" +
-                   "-fx-border-width: 3;" +
-                   "-fx-border-radius: 12;" +
-                   "-fx-background-radius: 12;" +
-                   "-fx-text-fill: #4b5563;" +
-                   "-fx-font-size: 13px;" +
-                   "-fx-font-weight: bold;" +
-                   "-fx-font-family: 'Consolas', monospace;";
+    private void renderMenu() {
+        actionGrid.getChildren().clear();
+        
+        for (int i = 0; i < currentMenuOptions.size(); i++) {
+            MenuItem item = currentMenuOptions.get(i);
+            int row = i / 2;
+            int col = i % 2;
+            
+            HBox slot = new HBox(6);
+            slot.setAlignment(Pos.CENTER_LEFT);
+            slot.setPrefSize(130, 35);
+            
+            Label cursor = new Label("▶");
+            cursor.setStyle("-fx-text-fill: #000000; -fx-font-size: 16px; -fx-font-family: 'Consolas', monospace;");
+            cursor.setVisible(i == focusedIndex);
+            
+            Label text = new Label(item.label);
+            text.setStyle("-fx-text-fill: " + (item.disabled ? "#9ca3af" : "#000000") + "; " +
+                    "-fx-font-size: 16px; -fx-font-family: 'Consolas', monospace; -fx-font-weight: bold;");
+            
+            if (item.subtext != null && !item.subtext.isEmpty()) {
+                Label sub = new Label(item.subtext);
+                sub.setStyle("-fx-text-fill: #6b7280; -fx-font-size: 11px; -fx-font-family: 'Consolas', monospace;");
+                VBox v = new VBox(0, text, sub);
+                v.setAlignment(Pos.CENTER_LEFT);
+                slot.getChildren().addAll(cursor, v);
+            } else {
+                slot.getChildren().addAll(cursor, text);
+            }
+            
+            if (!item.disabled) {
+                final int idx = i;
+                slot.setOnMouseEntered(e -> {
+                    focusedIndex = idx;
+                    renderMenu();
+                });
+                slot.setOnMouseClicked(e -> {
+                    if (awaitingInput && !paused) item.action.run();
+                });
+                slot.setStyle("-fx-cursor: hand;");
+            } else {
+                slot.setOpacity(0.5);
+            }
+            actionGrid.add(slot, col, row);
         }
         
-        // Gradient based on the base color
-        String fill = hover 
-            ? "-fx-background-color: #ffffff;" 
-            : "-fx-background-color: linear-gradient(to bottom, " + bg + ", derive(" + bg + ", -30%));";
+        // Add Back option if not in ROOT
+        if (menuState != MenuState.ROOT) {
+            HBox backSlot = new HBox(6);
+            backSlot.setAlignment(Pos.CENTER_LEFT);
+            backSlot.setPrefSize(130, 35);
             
-        String edge = hover ? border : "derive(" + border + ", 20%)";
-        String text = hover ? border : "#ffffff";
-
-        return fill +
-               "-fx-border-color: " + edge + ";" +
-               "-fx-border-width: 3;" +
-               "-fx-border-radius: 10;" +
-               "-fx-background-radius: 10;" +
-               "-fx-text-fill: " + text + ";" +
-               "-fx-font-size: 13px;" +
-               "-fx-font-weight: bold;" +
-               "-fx-font-family: 'Georgia';" +
-               "-fx-text-alignment: center;" +
-               "-fx-cursor: hand;" +
-               "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.65), 8, 0, 0, 4);";
+            Label backCursor = new Label("▶");
+            backCursor.setStyle("-fx-text-fill: #000000; -fx-font-size: 16px; -fx-font-family: 'Consolas', monospace;");
+            backCursor.setVisible(focusedIndex == currentMenuOptions.size());
+            
+            Label backText = new Label("BACK");
+            backText.setStyle("-fx-text-fill: #000000; -fx-font-size: 16px; -fx-font-family: 'Consolas', monospace; -fx-font-weight: bold;");
+            
+            backSlot.getChildren().addAll(backCursor, backText);
+            
+            final int backIdx = currentMenuOptions.size();
+            backSlot.setOnMouseEntered(e -> {
+                focusedIndex = backIdx;
+                renderMenu();
+            });
+            backSlot.setOnMouseClicked(e -> {
+                if (awaitingInput && !paused) {
+                    menuState = MenuState.ROOT;
+                    buildActionBar((Hero) current);
+                }
+            });
+            backSlot.setStyle("-fx-cursor: hand;");
+            
+            actionGrid.add(backSlot, 0, 2, 2, 1);
+        }
     }
 
     private void doHeroDefend(Hero hero) {
@@ -888,11 +881,14 @@ public class BattleScreen extends StackPane {
     }
 
     private void showWaitingBar() {
-        actionGrid.getChildren().clear();
-        Label l = new Label("· · ·  enemy is acting  · · ·");
-        l.setStyle("-fx-text-fill: #6b2020; -fx-font-size: 14px; -fx-font-style: italic;");
-        actionGrid.add(l, 0, 0, 2, 2);
+        currentMenuOptions.clear();
         promptLabel.setText("The enemy makes its move…");
+        promptLabel.setStyle("-fx-text-fill: #f87171; -fx-font-size: 18px; " +
+                "-fx-font-family: 'Consolas', monospace; -fx-font-weight: bold;");
+        actionGrid.getChildren().clear();
+        Label l = new Label("· · ·");
+        l.setStyle("-fx-text-fill: #9ca3af; -fx-font-size: 20px; -fx-font-family: 'Consolas';");
+        actionGrid.add(l, 0, 0, 2, 2);
     }
 
     // ==================================================================
@@ -1670,12 +1666,58 @@ public class BattleScreen extends StackPane {
 
     private void handleKey(javafx.scene.input.KeyEvent e) {
         if (e.getCode() == KeyCode.ESCAPE && awaitingInput && !gameOver) {
-            togglePause();
+            if (menuState != MenuState.ROOT) {
+                menuState = MenuState.ROOT;
+                buildActionBar((Hero) current);
+            } else {
+                togglePause();
+            }
             return;
         }
+        
         if (!awaitingInput || paused || gameOver || showingIntro) return;
         if (!(current instanceof Hero hero)) return;
 
+        // Keyboard Navigation
+        int maxIdx = currentMenuOptions.size() + (menuState != MenuState.ROOT ? 1 : 0);
+        if (maxIdx > 0) {
+            if (e.getCode() == KeyCode.UP) {
+                focusedIndex = Math.max(0, focusedIndex - 2);
+                renderMenu();
+                return;
+            }
+            if (e.getCode() == KeyCode.DOWN) {
+                focusedIndex = Math.min(maxIdx - 1, focusedIndex + 2);
+                renderMenu();
+                return;
+            }
+            if (e.getCode() == KeyCode.LEFT) {
+                if (focusedIndex > 0) {
+                    focusedIndex--;
+                    renderMenu();
+                }
+                return;
+            }
+            if (e.getCode() == KeyCode.RIGHT) {
+                if (focusedIndex < maxIdx - 1) {
+                    focusedIndex++;
+                    renderMenu();
+                }
+                return;
+            }
+            if (e.getCode() == KeyCode.ENTER || e.getCode() == KeyCode.SPACE) {
+                if (focusedIndex < currentMenuOptions.size()) {
+                    MenuItem item = currentMenuOptions.get(focusedIndex);
+                    if (!item.disabled) item.action.run();
+                } else {
+                    menuState = MenuState.ROOT;
+                    buildActionBar(hero);
+                }
+                return;
+            }
+        }
+
+        // Shortcuts
         if ((e.getCode() == KeyCode.Q || e.getCode() == KeyCode.DIGIT0) && hero.hasUlt()) {
             doHeroUltimate(hero);
             return;
@@ -1690,7 +1732,7 @@ public class BattleScreen extends StackPane {
             case DIGIT5 -> idx = 4;
             case DIGIT6 -> idx = 5;
         }
-        if (idx >= 0 && idx < hero.skills.size()) {
+        if (idx >= 0 && menuState == MenuState.SKILLS && idx < hero.skills.size()) {
             Skill s = hero.skills.get(idx);
             if (hero.mp >= s.mpCost && hero.cooldownOf(s) == 0) doHeroSkill(hero, s);
         }

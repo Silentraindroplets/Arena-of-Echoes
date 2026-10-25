@@ -23,4 +23,6 @@ public class Settings {
             case OFF    -> false;
         };
     }
+        public boolean tutorialSeen = false; // ADD THIS LINE
+
 }

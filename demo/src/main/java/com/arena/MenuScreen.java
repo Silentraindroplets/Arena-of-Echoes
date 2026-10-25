@@ -26,16 +26,19 @@ public class MenuScreen extends StackPane {
         Button single = makeBtn("Single Player",    "#7c5cff");
         Button coop   = makeBtn("Local Co-op · 2P", "#38bdf8");
         Button codex  = makeBtn("Codex",            "#a78bfa");
+        Button howTo  = makeBtn("How to Play",      "#facc15"); // ADD THIS
         Button sett   = makeBtn("Settings",         "#f59e0b");
         Button quit   = makeBtn("Quit",             "#ef4444");
 
         single.setOnAction(e -> game.startBattleWithIntro(1));
         coop  .setOnAction(e -> game.startBattleWithIntro(2));
         codex .setOnAction(e -> game.showCodex());
+        howTo .setOnAction(e -> game.showTutorial(null)); // ADD THIS
         sett  .setOnAction(e -> showSettings(game));
         quit  .setOnAction(e -> System.exit(0));
 
-        VBox buttons = new VBox(12, single, coop, codex, sett, quit);
+        // Add it to the VBox list
+        VBox buttons = new VBox(12, single, coop, codex, howTo, sett, quit);
         buttons.setAlignment(Pos.CENTER);
         buttons.setPadding(new Insets(30, 0, 0, 0));
 
